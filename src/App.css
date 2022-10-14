@@ -1,7 +1,8 @@
 .App {
   text-align: center;
   font-family: Roboto, Arial;
-  background-color: black;
+  background-color: #121216;
+  color: white;
   overflow: hidden;
   transition: all 0.3s;
 }

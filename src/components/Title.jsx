@@ -1,3 +1,4 @@
+import axios from "axios"
 import styled from "styled-components"
 import { SiBinance } from "react-icons/si"
 import { FaWallet } from "react-icons/fa"
@@ -87,7 +88,6 @@ const Title = () => {
 
     const TitleContainer = styled.section`
         color: white;
-        background-color: #121216;
 
         height: 100vh;
         display: flex;
