@@ -102,15 +102,12 @@ const Title = () => {
         & #vaultImg {
             height: 10em;
             margin: 0.5em;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
         }
 
         & #title {
             font-family: Roboto Mono, Arial;
             font-size: 1.5em;
-            font-weight: 100;
+            font-weight: 700;
             margin: 0.5em;
             margin-top: 0;
             margin-bottom: 1em;
