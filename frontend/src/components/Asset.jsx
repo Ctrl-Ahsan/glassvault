@@ -56,20 +56,17 @@ const Asset = (props) => {
     return (
         <AssetContainer onClick={onClick}>
             <div className="logo">
-                <img
-                    src="https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579"
-                    alt=""
-                />
+                <img src={props.imgURL} alt="logo" />
             </div>
             <div className="info">
-                <div className="name">Bitcoin</div>
+                <div className="name">{props.name}</div>
                 <div className="row">
                     <div className="row-heading">Amount</div>
-                    <div>700</div>
+                    <div>{props.amount}</div>
                 </div>
                 <div className="row">
                     <div className="row-heading">Avg. Buy Price</div>
-                    <div>$20,000.56</div>
+                    <div>${props.avg}</div>
                 </div>
             </div>
         </AssetContainer>
