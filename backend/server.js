@@ -27,28 +27,57 @@ app.post("/login", async (req, res) => {
 
     const fetchTrades = async (json) => {
         // Fetch trade information for all traded symbols
-        const data = json.snapshotVos[0].data.balances
+        const data = json.snapshotVos[json.snapshotVos.length - 1].data.balances
         for (let i = 0; i < data.length; i++) {
-            // signed request
-            timestamp = Date.now()
-            params = `symbol=${data[i].asset}USDT&timestamp=${timestamp}`
-            signature = crypto
-                .createHmac("sha256", secret)
-                .update(params)
-                .digest("hex")
-            url = `${burl}/api/v3/myTrades?${params}&signature=${signature}`
+            if (
+                parseInt(data[i].free) > 0 &&
+                data[i].asset != "USDT" &&
+                data[i].asset != "BUSD"
+            ) {
+                // signed request for USDT pairs
+                timestamp = Date.now()
+                params = `symbol=${data[i].asset}USDT&timestamp=${timestamp}`
+                signature = crypto
+                    .createHmac("sha256", secret)
+                    .update(params)
+                    .digest("hex")
+                url = `${burl}/api/v3/myTrades?${params}&signature=${signature}`
 
-            let trade = await fetch(url, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-MBX-APIKEY": key,
-                },
-            }).then((res) => res.json())
-            trades.push(trade)
+                let coinTrades = await fetch(url, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-MBX-APIKEY": key,
+                    },
+                }).then((res) => res.json())
+
+                // signed request for BUSD pairs
+                timestamp = Date.now()
+                params = `symbol=${data[i].asset}BUSD&timestamp=${timestamp}`
+                signature = crypto
+                    .createHmac("sha256", secret)
+                    .update(params)
+                    .digest("hex")
+                url = `${burl}/api/v3/myTrades?${params}&signature=${signature}`
+
+                let coinTrades2 = await fetch(url, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-MBX-APIKEY": key,
+                    },
+                }).then((res) => res.json())
+
+                if (coinTrades.length > 0 && coinTrades2.length > 0) {
+                    coinTrades = coinTrades.concat(coinTrades2)
+                    coinTrades.sort((a, b) => {
+                        return a[time] - b[time]
+                    })
+                }
+                if (coinTrades.length > 0) trades.push(coinTrades)
+            }
         }
     }
 
-    // signed request for account snapshot
+    // signed request for account snapshot (authentication)
     timestamp = Date.now()
     params = `type=SPOT&timestamp=${timestamp}`
     signature = crypto.createHmac("sha256", secret).update(params).digest("hex")
@@ -63,6 +92,7 @@ app.post("/login", async (req, res) => {
         .then((res) => res.json())
         .then((json) => fetchTrades(json))
         .then(() => res.json(trades))
+        .catch(() => res.json("Authentication failed"))
 })
 
 app.listen(port, () => console.log("Server started on port " + port))
