@@ -24,16 +24,22 @@ app.post("/login", async (req, res) => {
     let signature
     let url
     let trades = []
+    let response = {}
 
     const fetchTrades = async (json) => {
-        // Fetch trade information for all traded symbols
+        // Fetch trade information for non-zero balances
         const data = json.snapshotVos[json.snapshotVos.length - 1].data.balances
         for (let i = 0; i < data.length; i++) {
             if (
-                parseInt(data[i].free) > 0 &&
+                (parseFloat(data[i].free) > 0 ||
+                    parseFloat(data[i].locked) > 0) &&
                 data[i].asset != "USDT" &&
                 data[i].asset != "BUSD"
             ) {
+                response[`${data[i].asset}`] = {
+                    held: parseFloat(data[i].free) + parseFloat(data[i].locked),
+                }
+
                 // signed request for USDT pairs
                 timestamp = Date.now()
                 params = `symbol=${data[i].asset}USDT&timestamp=${timestamp}`
@@ -66,13 +72,55 @@ app.post("/login", async (req, res) => {
                     },
                 }).then((res) => res.json())
 
+                // check if coin has been traded in both USDT and BUSD
                 if (coinTrades.length > 0 && coinTrades2.length > 0) {
                     coinTrades = coinTrades.concat(coinTrades2)
                     coinTrades.sort((a, b) => {
                         return a[time] - b[time]
                     })
                 }
+                // check if coin has been traded
                 if (coinTrades.length > 0) trades.push(coinTrades)
+            }
+        }
+    }
+
+    const calcAvgBuy = (tradesArray) => {
+        for (const trades of tradesArray) {
+            let held = 0
+            let fee = 0
+            let invested = 0
+            for (const trade of trades) {
+                if (trade.isBuyer) held += parseFloat(trade.qty)
+                else held -= parseFloat(trade.qty)
+
+                if (trade.isBuyer && trade.commissionAsset !== "BNB")
+                    fee += parseFloat(trade.commission)
+            }
+
+            if (held > 0) {
+                let tempCount = held
+                let i = trades.length - 1
+                while (tempCount > 0 && i >= 0) {
+                    if (trades[i].isBuyer) {
+                        if (parseFloat(trades[i].qty) < tempCount) {
+                            tempCount -= parseFloat(trades[i].qty)
+                            invested += parseFloat(trades[i].quoteQty)
+                        } else if (parseFloat(trades[i].qty) > tempCount) {
+                            invested +=
+                                (tempCount / parseFloat(trades[i].qty)) *
+                                parseFloat(trades[i].quoteQty)
+                            tempCount = 0
+                        }
+                    }
+                    i--
+                }
+            }
+            response[`${trades[0].symbol}`.slice(0, -4)] = {
+                ...response[`${trades[0].symbol}`.slice(0, -4)],
+                purchased: held - fee,
+                invested: invested,
+                avgBuy: invested / (held - fee),
             }
         }
     }
@@ -91,7 +139,8 @@ app.post("/login", async (req, res) => {
     })
         .then((res) => res.json())
         .then((json) => fetchTrades(json))
-        .then(() => res.json(trades))
+        .then(() => calcAvgBuy(trades))
+        .then(() => res.json(response))
         .catch(() => res.json("Authentication failed"))
 })
 
