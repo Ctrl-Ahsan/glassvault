@@ -8,16 +8,16 @@
 }
 @media screen and (min-width: 540px) {
   .App{
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 }
 @media screen and (min-width: 740px) {
   .App{
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 }
 @media screen and (min-width: 1080px) {
   .App{
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
 }

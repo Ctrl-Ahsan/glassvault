@@ -13,13 +13,13 @@ const Asset = (props) => {
         background-color: #1e1e25;
         border: thin solid #3d3c3c;
         border-radius: 5px;
-        height: 10em;
+        height: 12em;
         display: flex;
         justify-content: space-evenly;
         align-items: center;
 
         padding: 0.5em;
-        transition: all 0.5s;
+        transition: all 0.3s;
         cursor: pointer;
 
         :active {
@@ -27,7 +27,10 @@ const Asset = (props) => {
         }
         & .logo {
             & img {
-                height: 8em;
+                height: 6em;
+                @media screen and (min-width: 720px) {
+                    height: 8em;
+                }
             }
         }
 
@@ -38,19 +41,19 @@ const Asset = (props) => {
         & .name {
             font-family: Roboto Mono;
             font-weight: 700;
-            font-size: 1.5em;
+            font-size: 1.3em;
             margin-bottom: 1em;
         }
 
         & .row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            font-size: 1.2em;
             margin: 10px;
         }
 
         & .row-heading {
             font-weight: 700;
+            margin-right: 1em;
         }
     `
     return (
@@ -65,7 +68,7 @@ const Asset = (props) => {
                     <div>{props.amount}</div>
                 </div>
                 <div className="row">
-                    <div className="row-heading">Avg. Buy Price</div>
+                    <div className="row-heading">Average Price</div>
                     <div>${props.avg}</div>
                 </div>
             </div>

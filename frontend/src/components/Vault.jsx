@@ -29,14 +29,14 @@ const Vault = () => {
             column-gap: 4vw;
             row-gap: 30px;
 
-            margin: 1em;
+            margin: 2em;
 
             @media screen and (max-width: 2600px) {
                 ${view
                     ? "grid-template-columns: 1fr;"
                     : "grid-template-columns: 1fr 1fr;"}
             }
-            @media screen and (max-width: 1800px) {
+            @media screen and (max-width: 1600px) {
                 grid-template-columns: 1fr;
             }
 

@@ -2,10 +2,11 @@ import axios from "axios"
 import styled from "styled-components"
 import { SiBinance } from "react-icons/si"
 import { FaWallet } from "react-icons/fa"
+import { IoIosArrowBack } from "react-icons/io"
 import { useState } from "react"
 
 const Title = () => {
-    const [toggleBinance, setBToggle] = useState(false)
+    const [toggleLogin, setToggleLogin] = useState(false)
     const [toggleKuCoin, setKToggle] = useState(false)
 
     const Login = () => {
@@ -29,21 +30,14 @@ const Title = () => {
 
         return (
             <>
+                <div className="back" onClick={() => setToggleLogin(false)}>
+                    <IoIosArrowBack />
+                </div>
                 <div className="heading">
                     <FaWallet />
                     Login
                 </div>
                 <form className="form" onSubmit={onSubmit}>
-                    <div className="form-item">
-                        <input
-                            required
-                            type="text"
-                            name="label"
-                            value={label}
-                            placeholder="Wallet Nickname"
-                            onChange={onChange}
-                        />
-                    </div>
                     <div className="form-item">
                         <input
                             required
@@ -80,10 +74,12 @@ const Title = () => {
     }
 
     const handleKuCoin = () => {
-        setKToggle(true)
-        setTimeout(() => {
-            setKToggle(false)
-        }, 3000)
+        if (!toggleKuCoin) {
+            setKToggle(true)
+            setTimeout(() => {
+                setKToggle(false)
+            }, 3000)
+        }
     }
 
     const TitleContainer = styled.section`
@@ -141,12 +137,15 @@ const Title = () => {
             background-color: #efb90a;
             margin-top: 2em;
             :active {
-                scale: 0.9;
+                scale: 0.95;
             }
         }
         & #kucoin {
             background-color: #24ae90;
             :hover {
+                background-color: #686868;
+            }
+            :active {
                 background-color: #686868;
             }
         }
@@ -159,6 +158,23 @@ const Title = () => {
             top: 5em;
             padding: 10px;
             border-radius: 20px;
+        }
+
+        & .back {
+            font-size: 2em;
+            position: absolute;
+            top: 1em;
+            left: 0.5em;
+            transition: all 0.3s;
+
+            :hover {
+                color: grey;
+                cursor: pointer;
+            }
+            :active {
+                color: grey;
+                scale: 0.9;
+            }
         }
 
         & .login {
@@ -209,6 +225,13 @@ const Title = () => {
                 width: 100%;
                 padding: 0.6em 0.4em;
                 border-radius: 10px;
+
+                :hover {
+                    background-color: #016d02;
+                }
+                :active {
+                    scale: 0.95;
+                }
             }
         }
 
@@ -256,7 +279,7 @@ const Title = () => {
 
     return (
         <TitleContainer>
-            {toggleBinance ? (
+            {toggleLogin ? (
                 <Login />
             ) : (
                 <>
@@ -268,7 +291,7 @@ const Title = () => {
                         <button
                             className="connect"
                             id="binance"
-                            onClick={setBToggle}
+                            onClick={setToggleLogin}
                         >
                             <div>
                                 <SiBinance />
