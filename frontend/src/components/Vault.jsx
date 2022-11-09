@@ -1,10 +1,20 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import styled from "styled-components"
 import Asset from "./Asset"
 import { BiUserCircle } from "react-icons/bi"
+import axios from "axios"
 
 const Vault = () => {
-    const [view, toggleView] = useState(false)
+    useEffect(() => {
+        const setVault = async () => {
+            const auth = JSON.parse(localStorage.getItem("auth"))
+            const vaultInfo = await axios
+                .post("/vault", auth)
+                .catch((error) => error.response)
+            console.log(Object.entries(vaultInfo.data))
+        }
+        setVault()
+    })
     const VaultContainer = styled.section`
         min-height: 100vh;
 
@@ -32,15 +42,12 @@ const Vault = () => {
             margin: 2em;
 
             @media screen and (max-width: 2600px) {
-                ${view
-                    ? "grid-template-columns: 1fr;"
-                    : "grid-template-columns: 1fr 1fr;"}
+                grid-template-columns: 1fr 1fr;
             }
+
             @media screen and (max-width: 1600px) {
                 grid-template-columns: 1fr;
             }
-
-            ${view ? "grid-template-columns: 1fr;" : ""}
         }
     `
     return (
@@ -51,35 +58,30 @@ const Vault = () => {
             </div>
             <div className="list">
                 <Asset
-                    toggleView={toggleView}
                     name="Bitcoin"
                     amount="0.047"
                     avg="23,539.32"
                     imgURL="https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579"
                 />
                 <Asset
-                    toggleView={toggleView}
                     name="Ethereum"
                     amount="1.219"
                     avg="2,411.67"
                     imgURL="https://assets.coingecko.com/coins/images/279/large/ethereum.png?1595348880"
                 />
                 <Asset
-                    toggleView={toggleView}
                     name="Binance Coin"
                     amount="43.931"
                     avg="331.48"
                     imgURL="https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png?1644979850"
                 />
                 <Asset
-                    toggleView={toggleView}
                     name="Cardano"
                     amount="773.430"
                     avg="1.576"
                     imgURL="https://assets.coingecko.com/coins/images/975/large/cardano.png?1547034860"
                 />
                 <Asset
-                    toggleView={toggleView}
                     name="Ripple"
                     amount="1137.286"
                     avg="0.454"

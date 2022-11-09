@@ -1,22 +1,24 @@
 import axios from "axios"
 import styled from "styled-components"
+import { toast } from "react-toastify"
 import { SiBinance } from "react-icons/si"
 import { FaWallet } from "react-icons/fa"
 import { IoIosArrowBack } from "react-icons/io"
-import { useState } from "react"
+import { useContext, useState } from "react"
+import { AppContext } from "../context/AppContext"
 
 const Title = () => {
+    const { setPage } = useContext(AppContext)
     const [toggleLogin, setToggleLogin] = useState(false)
     const [toggleKuCoin, setKToggle] = useState(false)
 
     const Login = () => {
         const [login, setLogin] = useState({
-            label: "",
             key: "",
             secret: "",
         })
 
-        const { label, key, secret } = login
+        const { key, secret } = login
 
         const onChange = (e) => {
             setLogin((prevState) => ({
@@ -24,8 +26,25 @@ const Title = () => {
                 [e.target.name]: e.target.value,
             }))
         }
-        const onSubmit = (e) => {
+        const onSubmit = async (e) => {
             e.preventDefault()
+
+            const response = await axios
+                .post("/login", login)
+                .catch((error) => error.response)
+            if (response.status !== 200) {
+                toast.error(response.data)
+            } else {
+                console.log(response)
+                localStorage.setItem(
+                    "auth",
+                    JSON.stringify({
+                        key: response.data.encKey,
+                        secret: response.data.encSecret,
+                    })
+                )
+                setPage("VAULT")
+            }
         }
 
         return (
@@ -64,6 +83,7 @@ const Title = () => {
                         <a
                             href="https://www.binance.com/en/support/faq/360002502072"
                             target="_blank"
+                            rel="noreferrer"
                         >
                             How do I get my API Key and Secret?
                         </a>
