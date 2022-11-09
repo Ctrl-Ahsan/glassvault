@@ -1,6 +1,9 @@
-const fetch = require("node-fetch")
 const express = require("express")
+const fetch = require("node-fetch")
 const crypto = require("crypto")
+const CryptoJS = require("crypto-js")
+const path = require("path")
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") })
 const port = process.env.PORT || 8000
 
 const app = express()
@@ -10,21 +13,80 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
 const burl = "https://api.binance.com"
+let timestamp
+let params
+let signature
+let url
+let trades = []
+let response = {}
 
 app.post("/login", async (req, res) => {
     const { key, secret } = req.body
-
     if (!key || !secret) {
         res.status(400).send("Please fill in all fields")
         return
     }
 
-    let timestamp
-    let params
-    let signature
-    let url
-    let trades = []
-    let response = {}
+    // (Authentication) signed request for account permissions
+    timestamp = Date.now()
+    params = `timestamp=${timestamp}`
+    signature = crypto.createHmac("sha256", secret).update(params).digest("hex")
+    url = `${burl}/sapi/v1/account/apiRestrictions?${params}&signature=${signature}`
+
+    const loginResponse = await fetch(url, {
+        headers: {
+            "Content-Type": "application/json",
+            "X-MBX-APIKEY": key,
+        },
+    })
+
+    const responseBody = await loginResponse.json()
+
+    if (responseBody.code === -2008) {
+        res.status(401).send("Invalid API Key")
+    } else if (responseBody.code === -1022) {
+        res.status(401).send("Invalid Secret")
+    } else if (!responseBody.enableReading) {
+        res.status(403).send("API does not have reading enabled")
+    } else if (
+        responseBody.enableMargin ||
+        responseBody.enableSpotAndMarginTrading ||
+        responseBody.enableWithdrawals ||
+        responseBody.enableInternalTransfer ||
+        responseBody.enableFutures ||
+        responseBody.permitsUniversalTransfer ||
+        responseBody.enableVanillaOptions
+    ) {
+        res.status(400).send("API is not read-only")
+    } else {
+        response = {
+            encKey: CryptoJS.AES.encrypt(
+                key,
+                process.env.AUTH_SECRET
+            ).toString(),
+            encSecret: CryptoJS.AES.encrypt(
+                secret,
+                process.env.AUTH_SECRET
+            ).toString(),
+        }
+        res.json(response)
+    }
+})
+
+app.post("/vault", async (req, res) => {
+    let { key, secret } = req.body
+    if (!key || !secret) {
+        res.status(400).send("Please fill in all fields")
+        return
+    }
+
+    // decrypt key and secret
+    key = CryptoJS.AES.decrypt(key, process.env.AUTH_SECRET).toString(
+        CryptoJS.enc.Utf8
+    )
+    secret = CryptoJS.AES.decrypt(secret, process.env.AUTH_SECRET).toString(
+        CryptoJS.enc.Utf8
+    )
 
     const fetchTrades = async (json) => {
         // Fetch trade information for non-zero balances
@@ -125,7 +187,7 @@ app.post("/login", async (req, res) => {
         }
     }
 
-    // signed request for account snapshot (authentication)
+    // signed request for account snapshot
     timestamp = Date.now()
     params = `type=SPOT&timestamp=${timestamp}`
     signature = crypto.createHmac("sha256", secret).update(params).digest("hex")
@@ -141,7 +203,7 @@ app.post("/login", async (req, res) => {
         .then((json) => fetchTrades(json))
         .then(() => calcAvgBuy(trades))
         .then(() => res.json(response))
-        .catch(() => res.json("Authentication failed"))
+        .catch(() => res.status(401).send("Could not fetch trades"))
 })
 
 app.listen(port, () => console.log("Server started on port " + port))

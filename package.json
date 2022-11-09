@@ -24,6 +24,7 @@
   "homepage": "https://github.com/Ctrl-Ahsan/glassvault#readme",
   "dependencies": {
     "crypto-js": "^4.1.1",
+    "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "node-fetch": "^2.6.7"
   }
