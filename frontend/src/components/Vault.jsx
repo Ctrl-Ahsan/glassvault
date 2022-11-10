@@ -5,16 +5,17 @@ import { BiUserCircle } from "react-icons/bi"
 import axios from "axios"
 
 const Vault = () => {
+    const [assets, setAssets] = useState([])
     useEffect(() => {
         const setVault = async () => {
             const auth = JSON.parse(localStorage.getItem("auth"))
             const vaultInfo = await axios
                 .post("/vault", auth)
                 .catch((error) => error.response)
-            console.log(Object.entries(vaultInfo.data))
+            setAssets(Object.entries(vaultInfo.data))
         }
         setVault()
-    })
+    }, [])
     const VaultContainer = styled.section`
         min-height: 100vh;
 
@@ -57,7 +58,19 @@ const Vault = () => {
                 <BiUserCircle />
             </div>
             <div className="list">
-                <Asset
+                {assets !== [] &&
+                    assets.map((asset, i) => {
+                        return (
+                            <Asset
+                                key={i}
+                                name={asset[0]}
+                                amount={asset[1].held}
+                                avg={asset[1].avgBuy}
+                                imgURL="https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579"
+                            />
+                        )
+                    })}
+                {/* <Asset
                     name="Bitcoin"
                     amount="0.047"
                     avg="23,539.32"
@@ -86,7 +99,7 @@ const Vault = () => {
                     amount="1137.286"
                     avg="0.454"
                     imgURL="https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png?1605778731"
-                />
+                /> */}
             </div>
         </VaultContainer>
     )
