@@ -12,7 +12,44 @@ const Vault = () => {
             const vaultInfo = await axios
                 .post("/vault", auth)
                 .catch((error) => error.response)
-            setAssets(Object.entries(vaultInfo.data))
+            let assetsArray = Object.entries(vaultInfo.data)
+            const coinInfo = await axios.get(
+                "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false"
+            )
+            for (const asset of assetsArray) {
+                for (const coin of coinInfo.data) {
+                    if (asset[0].toLowerCase() === coin.symbol) {
+                        asset[1].img = coin.image
+                        break
+                    }
+                }
+                if (asset[1].img === undefined) {
+                    const coinInfo2 = await axios.get(
+                        "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=2&sparkline=false"
+                    )
+                    for (const coin of coinInfo2.data) {
+                        if (asset[0].toLowerCase() === coin.symbol) {
+                            asset[1].img = coin.image
+                            break
+                        }
+                    }
+                    if (asset[1].img === undefined) {
+                        const coinInfo3 = await axios.get(
+                            "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=3&sparkline=false"
+                        )
+                        for (const coin of coinInfo3.data) {
+                            if (asset[0].toLowerCase() === coin.symbol) {
+                                asset[1].img = coin.image
+                                break
+                            }
+                        }
+                        if (asset[1].img === undefined)
+                            asset[1].img =
+                                "https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579"
+                    }
+                }
+            }
+            setAssets(assetsArray)
         }
         setVault()
     }, [])
@@ -59,47 +96,17 @@ const Vault = () => {
             </div>
             <div className="list">
                 {assets !== [] &&
-                    assets.map((asset, i) => {
+                    assets.map((asset) => {
                         return (
                             <Asset
-                                key={i}
+                                key={asset[0]}
                                 name={asset[0]}
                                 amount={asset[1].held}
                                 avg={asset[1].avgBuy}
-                                imgURL="https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579"
+                                imgURL={asset[1].img}
                             />
                         )
                     })}
-                {/* <Asset
-                    name="Bitcoin"
-                    amount="0.047"
-                    avg="23,539.32"
-                    imgURL="https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579"
-                />
-                <Asset
-                    name="Ethereum"
-                    amount="1.219"
-                    avg="2,411.67"
-                    imgURL="https://assets.coingecko.com/coins/images/279/large/ethereum.png?1595348880"
-                />
-                <Asset
-                    name="Binance Coin"
-                    amount="43.931"
-                    avg="331.48"
-                    imgURL="https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png?1644979850"
-                />
-                <Asset
-                    name="Cardano"
-                    amount="773.430"
-                    avg="1.576"
-                    imgURL="https://assets.coingecko.com/coins/images/975/large/cardano.png?1547034860"
-                />
-                <Asset
-                    name="Ripple"
-                    amount="1137.286"
-                    avg="0.454"
-                    imgURL="https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png?1605778731"
-                /> */}
             </div>
         </VaultContainer>
     )
