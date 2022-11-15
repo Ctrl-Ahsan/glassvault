@@ -17,10 +17,9 @@ let timestamp
 let params
 let signature
 let url
-let trades = []
-let response = {}
 
 app.post("/login", async (req, res) => {
+    let response = {}
     const { key, secret } = req.body
     if (!key || !secret) {
         res.status(400).send("Please fill in all fields")
@@ -74,6 +73,8 @@ app.post("/login", async (req, res) => {
 })
 
 app.post("/vault", async (req, res) => {
+    let response = {}
+    let trades = []
     let { key, secret } = req.body
     if (!key || !secret) {
         res.status(400).send("Please fill in all fields")
@@ -90,7 +91,7 @@ app.post("/vault", async (req, res) => {
 
     const fetchTrades = async (json) => {
         // Fetch trade information for non-zero balances
-        const data = json.snapshotVos[json.snapshotVos.length - 1].data.balances
+        const data = json.snapshotVos[json.snapshotVos.length - 2].data.balances
         for (let i = 0; i < data.length; i++) {
             if (
                 (parseFloat(data[i].free) > 0 ||
