@@ -58,7 +58,7 @@ const Asset = (props) => {
         }
     `
     return (
-        <AssetContainer onClick={handleClick}>
+        <AssetContainer onClick={handleClick} className="puff-in-center">
             <div className="logo">
                 <img src={props.imgURL} alt="logo" />
             </div>

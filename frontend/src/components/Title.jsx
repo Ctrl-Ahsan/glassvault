@@ -183,8 +183,8 @@ const Title = () => {
         & .back {
             font-size: 2em;
             position: absolute;
-            top: 1em;
-            left: 0.5em;
+            top: 1.5em;
+            left: 1em;
             transition: all 0.3s;
 
             :hover {
