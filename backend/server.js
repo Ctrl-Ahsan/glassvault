@@ -204,7 +204,10 @@ app.post("/vault", async (req, res) => {
         .then((json) => fetchTrades(json))
         .then(() => calcAvgBuy(trades))
         .then(() => res.json(response))
-        .catch(() => res.status(401).send("Could not fetch trades"))
+        .catch((error) => {
+            res.status(400).send("Could not fetch trades")
+            console.error(error)
+        })
 })
 
 app.listen(port, () => console.log("Server started on port " + port))
