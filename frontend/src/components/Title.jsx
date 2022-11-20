@@ -162,9 +162,6 @@ const Title = () => {
         }
         & #kucoin {
             background-color: #24ae90;
-            :hover {
-                background-color: #686868;
-            }
             :active {
                 background-color: #686868;
             }

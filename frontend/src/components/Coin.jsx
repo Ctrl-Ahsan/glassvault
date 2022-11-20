@@ -1,7 +1,7 @@
 import { useContext } from "react"
 import styled from "styled-components"
 import { AppContext } from "../context/AppContext"
-import { IoIosClose } from "react-icons/io"
+import { IoIosArrowBack } from "react-icons/io"
 
 const Coin = () => {
     const { coin, setPage } = useContext(AppContext)
@@ -20,27 +20,26 @@ const Coin = () => {
         border: thin solid #3d3c3c;
         border-radius: 5px;
         margin: 2em;
-        padding-bottom: 2em;
+        padding: 2em 0;
 
         & .top {
             display: flex;
-            justify-content: flex-end;
+            justify-content: flex-start;
             margin: 0;
         }
 
         & .close {
-            font-size: 2.5em;
+            font-size: 2em;
             transition: all 0.3s;
-            margin-top: 0.1em;
-            margin-right: 0.1em;
-
+            position: absolute;
+            left: 0.5em;
             :hover {
                 color: grey;
                 cursor: pointer;
             }
             :active {
                 color: grey;
-                font-size: 1.8em;
+                scale: 0.8;
             }
         }
 
@@ -88,11 +87,9 @@ const Coin = () => {
         }
     `
     return (
-        <CoinContainer>
-            <div className="top">
-                <div className="close" onClick={() => setPage("VAULT")}>
-                    <IoIosClose />
-                </div>
+        <CoinContainer className="swing-in-top-fwd">
+            <div className="close" onClick={() => setPage("VAULT")}>
+                <IoIosArrowBack />
             </div>
             <div className="heading">
                 <img src={coin.imgURL} alt="logo" />

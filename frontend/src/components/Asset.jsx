@@ -5,6 +5,12 @@ import { AppContext } from "../context/AppContext"
 const Asset = (props) => {
     const { setPage, setCoin } = useContext(AppContext)
 
+    const formatNumber = (num) => {
+        if (num >= 1000) return num.toFixed()
+        else if (num >= 10) return num.toFixed(2)
+        else return num.toFixed(3)
+    }
+
     const handleClick = () => {
         setCoin(props)
         setPage("COIN")
@@ -23,7 +29,7 @@ const Asset = (props) => {
         cursor: pointer;
 
         :active {
-            scale: 0.9;
+            scale: 0.95;
         }
         & .logo {
             & img {
@@ -45,6 +51,11 @@ const Asset = (props) => {
             margin-bottom: 1em;
         }
 
+        & .pl {
+            font-family: Roboto;
+            font-size: 0.5em;
+            font-weight: 400;
+        }
         & .row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -56,6 +67,13 @@ const Asset = (props) => {
             font-weight: 700;
             margin-right: 1em;
         }
+
+        & .green {
+            color: green;
+        }
+        & .red {
+            color: red;
+        }
     `
     return (
         <AssetContainer onClick={handleClick} className="puff-in-center">
@@ -63,31 +81,31 @@ const Asset = (props) => {
                 <img src={props.imgURL} alt="logo" />
             </div>
             <div className="info">
-                <div className="name">{props.symbol}</div>
-                <div className="row">
-                    <div className="row-heading">Amount</div>
-                    <div>
-                        {props.amount >= 1000
-                            ? props.amount.toFixed()
-                            : props.amount >= 10
-                            ? props.amount.toFixed(2)
-                            : props.amount >= 0
-                            ? props.amount.toFixed(3)
-                            : props.amount.toFixed(4)}
+                <div className="name">
+                    {props.symbol}{" "}
+                    <div
+                        className={
+                            props.price > props.avg
+                                ? "green pl"
+                                : props.price < props.avg
+                                ? "red pl"
+                                : ""
+                        }
+                    >
+                        {(
+                            ((props.price - props.avg) / props.avg) *
+                            100
+                        ).toFixed(2)}
+                        %
                     </div>
                 </div>
                 <div className="row">
+                    <div className="row-heading">Amount</div>
+                    <div>{formatNumber(props.amount)}</div>
+                </div>
+                <div className="row">
                     <div className="row-heading">Average Price</div>
-                    <div>
-                        $
-                        {props.avg >= 1000
-                            ? props.avg.toFixed()
-                            : props.avg >= 10
-                            ? props.avg.toFixed(2)
-                            : props.avg >= 0
-                            ? props.avg.toFixed(3)
-                            : props.avg.toFixed(4)}
-                    </div>
+                    <div>${formatNumber(props.avg)}</div>
                 </div>
             </div>
         </AssetContainer>
