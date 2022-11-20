@@ -1,6 +1,14 @@
+import { useContext } from "react"
 import styled from "styled-components"
+import { AppContext } from "../context/AppContext"
 
 const Asset = (props) => {
+    const { setPage, setCoin } = useContext(AppContext)
+
+    const handleClick = () => {
+        setCoin(props)
+        setPage("COIN")
+    }
     const AssetContainer = styled.div`
         background-color: #1e1e25;
         border: thin solid #3d3c3c;
@@ -44,17 +52,18 @@ const Asset = (props) => {
         }
 
         & .row-heading {
+            color: #aeaeae;
             font-weight: 700;
             margin-right: 1em;
         }
     `
     return (
-        <AssetContainer>
+        <AssetContainer onClick={handleClick}>
             <div className="logo">
                 <img src={props.imgURL} alt="logo" />
             </div>
             <div className="info">
-                <div className="name">{props.name}</div>
+                <div className="name">{props.symbol}</div>
                 <div className="row">
                     <div className="row-heading">Amount</div>
                     <div>
@@ -70,6 +79,7 @@ const Asset = (props) => {
                 <div className="row">
                     <div className="row-heading">Average Price</div>
                     <div>
+                        $
                         {props.avg >= 1000
                             ? props.avg.toFixed()
                             : props.avg >= 10
