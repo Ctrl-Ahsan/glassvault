@@ -168,7 +168,7 @@ app.post("/vault", async (req, res) => {
                 let i = trades.length - 1
                 while (tempCount > 0 && i >= 0) {
                     if (trades[i].isBuyer) {
-                        if (parseFloat(trades[i].qty) < tempCount) {
+                        if (parseFloat(trades[i].qty) <= tempCount) {
                             tempCount -= parseFloat(trades[i].qty)
                             invested += parseFloat(trades[i].quoteQty)
                         } else if (parseFloat(trades[i].qty) > tempCount) {
