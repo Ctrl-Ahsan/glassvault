@@ -130,6 +130,7 @@ const Vault = () => {
                                     amount={asset[1].held}
                                     avg={asset[1].avgBuy}
                                     price={asset[1].price}
+                                    trades={asset[1].trades}
                                     imgURL={asset[1].img}
                                 />
                             )
