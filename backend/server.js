@@ -83,6 +83,13 @@ app.post("/vault", async (req, res) => {
     let response = {}
     let trades = []
 
+    const formatNumber = (num) => {
+        if (num >= 1000) return parseFloat(num.toFixed(1))
+        else if (num >= 10) return parseFloat(num.toFixed(2))
+        else if (num >= 1) return parseFloat(num.toFixed(3))
+        else return parseFloat(num.toFixed(4))
+    }
+
     // fetch trade information for non-zero balances
     const fetchTrades = async (json) => {
         const data = json.snapshotVos[json.snapshotVos.length - 2].data.balances
@@ -95,7 +102,9 @@ app.post("/vault", async (req, res) => {
                 data[i].asset != "BUSD"
             ) {
                 response[`${data[i].asset}`] = {
-                    held: parseFloat(data[i].free) + parseFloat(data[i].locked),
+                    held: formatNumber(
+                        parseFloat(data[i].free) + parseFloat(data[i].locked)
+                    ),
                 }
 
                 // signed request for USDT pairs
@@ -147,25 +156,30 @@ app.post("/vault", async (req, res) => {
     const calcAvgBuy = (tradesArray) => {
         // for all assets in trades array
         for (const trades of tradesArray) {
-            let held = 0
+            let purchased = 0
+            let received = 0
             let fee = 0
             let invested = 0
-            // for every trade in a given asset
+            let recentTrades = []
+
             for (const trade of trades) {
                 // get amount purchased
-                if (trade.isBuyer) held += parseFloat(trade.qty)
-                else held -= parseFloat(trade.qty)
+                if (trade.isBuyer) purchased += parseFloat(trade.qty)
+                else purchased -= parseFloat(trade.qty)
 
-                // factor in fees
+                // calculate fees
                 if (trade.isBuyer && trade.commissionAsset !== "BNB")
                     fee += parseFloat(trade.commission)
             }
+            // calculate amount user receives after fees
+            received = purchased - fee
 
-            // checking 'held' to ensure only amount purchased on Binance is used
-            if (held > 0) {
-                // calculate how much the held amount costs
-                let tempCount = held
+            // using 'purchased' instead of 'held' to ensure only amount purchased on Binance is used
+            if (purchased > 0) {
+                // calculate how much the purchased amount costs
+                let tempCount = purchased
                 let i = trades.length - 1
+
                 while (tempCount > 0 && i >= 0) {
                     if (trades[i].isBuyer) {
                         if (parseFloat(trades[i].qty) <= tempCount) {
@@ -180,12 +194,72 @@ app.post("/vault", async (req, res) => {
                     }
                     i--
                 }
+
+                // collect recent trades
+                tempCount = purchased - fee
+                i = trades.length - 1
+
+                while (tempCount > 0 && i >= 0) {
+                    if (trades[i].isBuyer) {
+                        if (parseFloat(trades[i].qty) <= tempCount) {
+                            tempCount -= parseFloat(trades[i].qty)
+                            recentTrades.push({
+                                orderId: trades[i].orderId,
+                                time: trades[i].time,
+                                price: parseFloat(trades[i].price),
+                                amount: parseFloat(trades[i].qty),
+                            })
+                        } else if (parseFloat(trades[i].qty) > tempCount) {
+                            recentTrades.push({
+                                orderId: trades[i].orderId,
+                                time: trades[i].time,
+                                price: parseFloat(trades[i].price),
+                                amount: tempCount,
+                            })
+                            tempCount = 0
+                        }
+                    }
+                    i--
+                }
             }
+
+            // prep recent trades array
+            recentTrades.reverse()
+            for (let i = 0; i < recentTrades.length; i++) {
+                if (i !== recentTrades.length - 1) {
+                    // merge trades with same orderId
+                    if (
+                        recentTrades[i].orderId ===
+                            recentTrades[i + 1].orderId &&
+                        recentTrades[i].price === recentTrades[i + 1].price
+                    ) {
+                        recentTrades[i].amount += recentTrades[i + 1].amount
+                        recentTrades[i].time = recentTrades[i + 1].time
+                        recentTrades.splice(i + 1, 1)
+                        i--
+                    }
+                }
+            }
+
+            // calculate and assign cumulative amount/average price
+            let cAmount = 0
+            let cPrice = 0
+            for (let i = 0; i < recentTrades.length; i++) {
+                cPrice =
+                    (cPrice * cAmount +
+                        recentTrades[i].price * recentTrades[i].amount) /
+                    (cAmount + recentTrades[i].amount)
+                cAmount += recentTrades[i].amount
+                recentTrades[i].cAmount = formatNumber(cAmount)
+                recentTrades[i].cPrice = formatNumber(cPrice)
+            }
+
             response[`${trades[0].symbol}`.slice(0, -4)] = {
                 ...response[`${trades[0].symbol}`.slice(0, -4)],
-                purchased: held - fee,
-                invested: invested,
-                avgBuy: invested / (held - fee),
+                purchased: formatNumber(received),
+                invested: formatNumber(invested),
+                avgBuy: formatNumber(invested / received),
+                trades: recentTrades,
             }
         }
     }

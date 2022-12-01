@@ -5,12 +5,6 @@ import { AppContext } from "../context/AppContext"
 const Asset = (props) => {
     const { setPage, setCoin } = useContext(AppContext)
 
-    const formatNumber = (num) => {
-        if (num >= 1000) return num.toFixed()
-        else if (num >= 10) return num.toFixed(2)
-        else return num.toFixed(3)
-    }
-
     const handleClick = () => {
         setCoin(props)
         setPage("COIN")
@@ -92,20 +86,22 @@ const Asset = (props) => {
                                 : ""
                         }
                     >
-                        {(
-                            ((props.price - props.avg) / props.avg) *
-                            100
-                        ).toFixed(2)}
+                        {parseFloat(
+                            (
+                                ((props.price - props.avg) / props.avg) *
+                                100
+                            ).toFixed(2)
+                        )}
                         %
                     </div>
                 </div>
                 <div className="row">
                     <div className="row-heading">Amount</div>
-                    <div>{formatNumber(props.amount)}</div>
+                    <div>{props.amount}</div>
                 </div>
                 <div className="row">
                     <div className="row-heading">Average Price</div>
-                    <div>${formatNumber(props.avg)}</div>
+                    <div>${props.avg}</div>
                 </div>
             </div>
         </AssetContainer>
