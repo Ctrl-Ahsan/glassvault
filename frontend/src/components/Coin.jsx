@@ -183,8 +183,12 @@ const Coin = () => {
             <div className="details">
                 <div className="info">
                     <div className="row">
-                        <div className="row-heading">Amount</div>
-                        <div>{coin.amount}</div>
+                        <div className="row-heading">Held</div>
+                        <div>{coin.held}</div>
+                    </div>
+                    <div className="row">
+                        <div className="row-heading">Purchased</div>
+                        <div>{coin.purchased}</div>
                     </div>
                     <div className="row">
                         <div className="row-heading">Average Price</div>
@@ -210,12 +214,16 @@ const Coin = () => {
                     </div>
                     <br />
                     <div className="row">
-                        <div className="row-heading">Purchase Value</div>
-                        <div>${(coin.avg * coin.amount).toFixed(2)}</div>
+                        <div className="row-heading">Held Value</div>
+                        <div>${(coin.avg * coin.held).toFixed(2)}</div>
+                    </div>
+                    <div className="row">
+                        <div className="row-heading">Purchased Value</div>
+                        <div>${(coin.avg * coin.purchased).toFixed(2)}</div>
                     </div>
                     <div className="row">
                         <div className="row-heading">Current Value</div>
-                        <div>${(coin.price * coin.amount).toFixed(2)}</div>
+                        <div>${(coin.price * coin.purchased).toFixed(2)}</div>
                     </div>
                     <div className="row">
                         <div className="row-heading">P/L</div>
@@ -224,8 +232,8 @@ const Coin = () => {
                         >
                             {coin.price - coin.avg ? "-" : ""}$
                             {Math.abs(
-                                coin.price * coin.amount -
-                                    coin.avg * coin.amount
+                                coin.price * coin.purchased -
+                                    coin.avg * coin.purchased
                             ).toFixed(2)}
                         </div>
                     </div>
@@ -233,7 +241,7 @@ const Coin = () => {
                 <div className="chart">
                     <ResponsiveContainer
                         width="100%"
-                        height={window.innerWidth > 1800 ? 400 : 300}
+                        height={window.innerWidth > 1800 ? 500 : 400}
                     >
                         <LineChart data={data}>
                             <Line

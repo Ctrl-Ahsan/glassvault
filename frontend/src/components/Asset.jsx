@@ -97,7 +97,7 @@ const Asset = (props) => {
                 </div>
                 <div className="row">
                     <div className="row-heading">Amount</div>
-                    <div>{props.amount}</div>
+                    <div>{props.held}</div>
                 </div>
                 <div className="row">
                     <div className="row-heading">Average Price</div>

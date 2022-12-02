@@ -127,7 +127,8 @@ const Vault = () => {
                                     key={asset[0]}
                                     symbol={asset[0]}
                                     name={asset[1].name}
-                                    amount={asset[1].held}
+                                    held={asset[1].held}
+                                    purchased={asset[1].purchased}
                                     avg={asset[1].avgBuy}
                                     price={asset[1].price}
                                     trades={asset[1].trades}
