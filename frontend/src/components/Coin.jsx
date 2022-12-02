@@ -214,10 +214,6 @@ const Coin = () => {
                     </div>
                     <br />
                     <div className="row">
-                        <div className="row-heading">Held Value</div>
-                        <div>${(coin.avg * coin.held).toFixed(2)}</div>
-                    </div>
-                    <div className="row">
                         <div className="row-heading">Purchased Value</div>
                         <div>${(coin.avg * coin.purchased).toFixed(2)}</div>
                     </div>
@@ -241,7 +237,7 @@ const Coin = () => {
                 <div className="chart">
                     <ResponsiveContainer
                         width="100%"
-                        height={window.innerWidth > 1800 ? 500 : 400}
+                        height={window.innerWidth > 1800 ? 450 : 350}
                     >
                         <LineChart data={data}>
                             <Line
