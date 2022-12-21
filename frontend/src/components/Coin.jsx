@@ -183,12 +183,8 @@ const Coin = () => {
             <div className="details">
                 <div className="info">
                     <div className="row">
-                        <div className="row-heading">Held</div>
-                        <div>{coin.held}</div>
-                    </div>
-                    <div className="row">
-                        <div className="row-heading">Purchased</div>
-                        <div>{coin.purchased}</div>
+                        <div className="row-heading">Amount</div>
+                        <div>{coin.amount}</div>
                     </div>
                     <div className="row">
                         <div className="row-heading">Average Price</div>
@@ -203,33 +199,36 @@ const Coin = () => {
                         <div
                             className={coin.price > coin.avg ? "green" : "red"}
                         >
-                            {parseFloat(
-                                (
-                                    ((coin.price - coin.avg) / coin.avg) *
-                                    100
-                                ).toFixed(2)
+                            {coin.price >= coin.avg ? "+" : "-"}
+                            {Math.abs(
+                                parseFloat(
+                                    (
+                                        ((coin.price - coin.avg) / coin.avg) *
+                                        100
+                                    ).toFixed(2)
+                                )
                             )}
                             %
                         </div>
                     </div>
                     <br />
                     <div className="row">
-                        <div className="row-heading">Purchased Value</div>
-                        <div>${(coin.avg * coin.purchased).toFixed(2)}</div>
+                        <div className="row-heading">Purchase Value</div>
+                        <div>${(coin.avg * coin.amount).toFixed(2)}</div>
                     </div>
                     <div className="row">
                         <div className="row-heading">Current Value</div>
-                        <div>${(coin.price * coin.purchased).toFixed(2)}</div>
+                        <div>${(coin.price * coin.amount).toFixed(2)}</div>
                     </div>
                     <div className="row">
                         <div className="row-heading">P/L</div>
                         <div
                             className={coin.price > coin.avg ? "green" : "red"}
                         >
-                            {coin.price - coin.avg ? "-" : ""}$
+                            {coin.price >= coin.avg ? "+" : "-"}$
                             {Math.abs(
-                                coin.price * coin.purchased -
-                                    coin.avg * coin.purchased
+                                coin.price * coin.amount -
+                                    coin.avg * coin.amount
                             ).toFixed(2)}
                         </div>
                     </div>

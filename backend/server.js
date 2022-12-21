@@ -83,6 +83,43 @@ app.post("/vault", async (req, res) => {
     let response = {}
     let trades = []
 
+    // get API key and secret from request
+    let { key, secret } = req.body
+    if (!key || !secret) {
+        res.status(400).send("Please fill in all fields")
+        return
+    }
+
+    // decrypt key and secret
+    key = CryptoJS.AES.decrypt(key, process.env.AUTH_SECRET).toString(
+        CryptoJS.enc.Utf8
+    )
+    secret = CryptoJS.AES.decrypt(secret, process.env.AUTH_SECRET).toString(
+        CryptoJS.enc.Utf8
+    )
+
+    // signed request for account snapshot
+    timestamp = Date.now()
+    params = `type=SPOT&timestamp=${timestamp}`
+    signature = crypto.createHmac("sha256", secret).update(params).digest("hex")
+    url = `${burl}/sapi/v1/accountSnapshot?${params}&signature=${signature}`
+
+    // get account snapshot, then fetch trades, then calculate average buy
+    fetch(url, {
+        headers: {
+            "Content-Type": "application/json",
+            "X-MBX-APIKEY": key,
+        },
+    })
+        .then((res) => res.json())
+        .then((json) => fetchTrades(json))
+        .then(() => calcAvgBuy(trades))
+        .then(() => res.json(response))
+        .catch((error) => {
+            res.status(400).send("Could not fetch trades")
+            console.error(error)
+        })
+
     const formatNumber = (num) => {
         if (num >= 1000) return parseFloat(num.toFixed(1))
         else if (num >= 10) return parseFloat(num.toFixed(2))
@@ -102,7 +139,7 @@ app.post("/vault", async (req, res) => {
                 data[i].asset != "BUSD"
             ) {
                 response[`${data[i].asset}`] = {
-                    held: formatNumber(
+                    amount: formatNumber(
                         parseFloat(data[i].free) + parseFloat(data[i].locked)
                     ),
                 }
@@ -156,71 +193,54 @@ app.post("/vault", async (req, res) => {
     const calcAvgBuy = (tradesArray) => {
         // for all assets in trades array
         for (const trades of tradesArray) {
-            let purchased = 0
-            let received = 0
-            let fee = 0
+            let amount = response[`${trades[0].symbol.slice(0, -4)}`].amount
             let invested = 0
             let recentTrades = []
 
-            for (const trade of trades) {
-                // get amount purchased
-                if (trade.isBuyer) purchased += parseFloat(trade.qty)
-                else purchased -= parseFloat(trade.qty)
+            // calculate the value at purchase time for held amount
+            let tempCount = amount
+            let i = trades.length - 1
 
-                // calculate fees
-                if (trade.isBuyer && trade.commissionAsset !== "BNB")
-                    fee += parseFloat(trade.commission)
+            while (tempCount > 0 && i >= 0) {
+                if (trades[i].isBuyer) {
+                    if (parseFloat(trades[i].qty) <= tempCount) {
+                        tempCount -= parseFloat(trades[i].qty)
+                        invested += parseFloat(trades[i].quoteQty)
+                    } else if (parseFloat(trades[i].qty) > tempCount) {
+                        invested +=
+                            (tempCount / parseFloat(trades[i].qty)) *
+                            parseFloat(trades[i].quoteQty)
+                        tempCount = 0
+                    }
+                }
+                i--
             }
-            // calculate amount user receives after fees
-            received = purchased - fee
 
-            // using 'purchased' instead of 'held' to ensure only amount purchased on Binance is used
-            if (purchased > 0) {
-                // calculate how much the purchased amount costs
-                let tempCount = purchased
-                let i = trades.length - 1
+            // collect recent trades
+            tempCount = amount
+            i = trades.length - 1
 
-                while (tempCount > 0 && i >= 0) {
-                    if (trades[i].isBuyer) {
-                        if (parseFloat(trades[i].qty) <= tempCount) {
-                            tempCount -= parseFloat(trades[i].qty)
-                            invested += parseFloat(trades[i].quoteQty)
-                        } else if (parseFloat(trades[i].qty) > tempCount) {
-                            invested +=
-                                (tempCount / parseFloat(trades[i].qty)) *
-                                parseFloat(trades[i].quoteQty)
-                            tempCount = 0
-                        }
+            while (tempCount > 0 && i >= 0) {
+                if (trades[i].isBuyer) {
+                    if (parseFloat(trades[i].qty) <= tempCount) {
+                        tempCount -= parseFloat(trades[i].qty)
+                        recentTrades.push({
+                            orderId: trades[i].orderId,
+                            time: trades[i].time,
+                            price: parseFloat(trades[i].price),
+                            amount: parseFloat(trades[i].qty),
+                        })
+                    } else if (parseFloat(trades[i].qty) > tempCount) {
+                        recentTrades.push({
+                            orderId: trades[i].orderId,
+                            time: trades[i].time,
+                            price: parseFloat(trades[i].price),
+                            amount: parseFloat(trades[i].qty),
+                        })
+                        tempCount = 0
                     }
-                    i--
                 }
-
-                // collect recent trades
-                tempCount = purchased - fee
-                i = trades.length - 1
-
-                while (tempCount > 0 && i >= 0) {
-                    if (trades[i].isBuyer) {
-                        if (parseFloat(trades[i].qty) <= tempCount) {
-                            tempCount -= parseFloat(trades[i].qty)
-                            recentTrades.push({
-                                orderId: trades[i].orderId,
-                                time: trades[i].time,
-                                price: parseFloat(trades[i].price),
-                                amount: parseFloat(trades[i].qty),
-                            })
-                        } else if (parseFloat(trades[i].qty) > tempCount) {
-                            recentTrades.push({
-                                orderId: trades[i].orderId,
-                                time: trades[i].time,
-                                price: parseFloat(trades[i].price),
-                                amount: tempCount,
-                            })
-                            tempCount = 0
-                        }
-                    }
-                    i--
-                }
+                i--
             }
 
             // prep recent trades array
@@ -256,50 +276,12 @@ app.post("/vault", async (req, res) => {
 
             response[`${trades[0].symbol}`.slice(0, -4)] = {
                 ...response[`${trades[0].symbol}`.slice(0, -4)],
-                purchased: formatNumber(received),
                 invested: formatNumber(invested),
-                avgBuy: formatNumber(invested / received),
+                avgBuy: formatNumber(invested / amount),
                 trades: recentTrades,
             }
         }
     }
-
-    // get API key and secret from request
-    let { key, secret } = req.body
-    if (!key || !secret) {
-        res.status(400).send("Please fill in all fields")
-        return
-    }
-
-    // decrypt key and secret
-    key = CryptoJS.AES.decrypt(key, process.env.AUTH_SECRET).toString(
-        CryptoJS.enc.Utf8
-    )
-    secret = CryptoJS.AES.decrypt(secret, process.env.AUTH_SECRET).toString(
-        CryptoJS.enc.Utf8
-    )
-
-    // signed request for account snapshot
-    timestamp = Date.now()
-    params = `type=SPOT&timestamp=${timestamp}`
-    signature = crypto.createHmac("sha256", secret).update(params).digest("hex")
-    url = `${burl}/sapi/v1/accountSnapshot?${params}&signature=${signature}`
-
-    // get account snapshot, then fetch trades, then calculate average buy
-    fetch(url, {
-        headers: {
-            "Content-Type": "application/json",
-            "X-MBX-APIKEY": key,
-        },
-    })
-        .then((res) => res.json())
-        .then((json) => fetchTrades(json))
-        .then(() => calcAvgBuy(trades))
-        .then(() => res.json(response))
-        .catch((error) => {
-            res.status(400).send("Could not fetch trades")
-            console.error(error)
-        })
 })
 
 app.listen(port, () => console.log("Server started on port " + port))

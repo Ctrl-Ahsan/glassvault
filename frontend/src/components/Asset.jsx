@@ -86,18 +86,21 @@ const Asset = (props) => {
                                 : ""
                         }
                     >
-                        {parseFloat(
-                            (
-                                ((props.price - props.avg) / props.avg) *
-                                100
-                            ).toFixed(2)
+                        {props.price >= props.avg ? "+" : "-"}
+                        {Math.abs(
+                            parseFloat(
+                                (
+                                    ((props.price - props.avg) / props.avg) *
+                                    100
+                                ).toFixed(2)
+                            )
                         )}
                         %
                     </div>
                 </div>
                 <div className="row">
                     <div className="row-heading">Amount</div>
-                    <div>{props.held}</div>
+                    <div>{props.amount}</div>
                 </div>
                 <div className="row">
                     <div className="row-heading">Average Price</div>
