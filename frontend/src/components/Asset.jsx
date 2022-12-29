@@ -47,7 +47,7 @@ const Asset = (props) => {
 
         & .pl {
             font-family: Roboto;
-            font-size: 0.5em;
+            font-size: 0.55em;
             font-weight: 400;
         }
         & .row {

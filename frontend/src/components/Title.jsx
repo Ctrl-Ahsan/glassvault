@@ -286,7 +286,7 @@ const Title = () => {
         }
         & .link {
             margin: 10px;
-            font-size: 0.7em;
+            font-size: 0.9em;
 
             & a {
                 text-decoration: none;

@@ -137,6 +137,7 @@ const Coin = () => {
 
         & .chart {
             margin: 1em;
+            margin-left: 0;
             margin-top: 3em;
             @media screen and (min-width: 720px) {
                 width: 50%;
@@ -260,9 +261,8 @@ const Coin = () => {
                             <XAxis dataKey="time" hide={true} />
                             <YAxis
                                 domain={["auto", "auto"]}
-                                tickFormatter={(value) =>
-                                    `$${value.toFixed(2)}`
-                                }
+                                width={80}
+                                tickFormatter={(value) => `$${value}`}
                             />
                             <Legend verticalAlign="bottom" height={1} />
                             <Tooltip
