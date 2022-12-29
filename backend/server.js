@@ -30,7 +30,7 @@ app.post("/login", async (req, res) => {
         return
     }
 
-    // signed request for account permissions (serves as authentication)
+    // signed request for API Key Permissions (serves as authentication)
     timestamp = Date.now()
     params = `timestamp=${timestamp}`
     signature = crypto.createHmac("sha256", secret).update(params).digest("hex")
@@ -86,7 +86,7 @@ app.post("/vault", async (req, res) => {
     // get API key and secret from request
     let { key, secret } = req.body
     if (!key || !secret) {
-        res.status(400).send("Please fill in all fields")
+        res.status(400).send("Request missing API Key or Secret")
         return
     }
 
@@ -98,7 +98,7 @@ app.post("/vault", async (req, res) => {
         CryptoJS.enc.Utf8
     )
 
-    // signed request for account snapshot
+    // signed request for Account Snapshot
     timestamp = Date.now()
     params = `type=SPOT&timestamp=${timestamp}`
     signature = crypto.createHmac("sha256", secret).update(params).digest("hex")
@@ -127,7 +127,7 @@ app.post("/vault", async (req, res) => {
         else return parseFloat(num.toFixed(4))
     }
 
-    // fetch trade information for non-zero balances
+    // fetch trades for non-zero balances
     const fetchTrades = async (json) => {
         const data = json.snapshotVos[json.snapshotVos.length - 2].data.balances
         for (let i = 0; i < data.length; i++) {
@@ -144,9 +144,9 @@ app.post("/vault", async (req, res) => {
                     ),
                 }
 
-                // signed request for USDT pairs
+                // signed request for Accout Trade List (USDT pairs)
                 timestamp = Date.now()
-                params = `symbol=${data[i].asset}USDT&timestamp=${timestamp}`
+                params = `symbol=${data[i].asset}USDT&limit=1000&timestamp=${timestamp}`
                 signature = crypto
                     .createHmac("sha256", secret)
                     .update(params)
@@ -160,9 +160,9 @@ app.post("/vault", async (req, res) => {
                     },
                 }).then((res) => res.json())
 
-                // signed request for BUSD pairs
+                // signed request for Accout Trade List (BUSD pairs)
                 timestamp = Date.now()
-                params = `symbol=${data[i].asset}BUSD&timestamp=${timestamp}`
+                params = `symbol=${data[i].asset}BUSD&limit=1000&timestamp=${timestamp}`
                 signature = crypto
                     .createHmac("sha256", secret)
                     .update(params)
@@ -197,7 +197,7 @@ app.post("/vault", async (req, res) => {
             let invested = 0
             let recentTrades = []
 
-            // calculate the value at purchase time for held amount
+            // calculate the purchase value for held amount
             let tempCount = amount
             let i = trades.length - 1
 
@@ -282,6 +282,119 @@ app.post("/vault", async (req, res) => {
             }
         }
     }
+})
+
+// summary
+app.post("/summary", async (req, res) => {
+    let response = {}
+
+    // get API key and secret from request
+    let { key, secret, timespan } = req.body
+    if (!key || !secret || !timespan) {
+        res.status(400).send("Request missing API Key, Secret or timespan")
+        return
+    }
+
+    // decrypt key and secret
+    key = CryptoJS.AES.decrypt(key, process.env.AUTH_SECRET).toString(
+        CryptoJS.enc.Utf8
+    )
+    secret = CryptoJS.AES.decrypt(secret, process.env.AUTH_SECRET).toString(
+        CryptoJS.enc.Utf8
+    )
+
+    // declare and set time variables / constants
+    let beginTime
+    let endTime
+    const foundingTime = 1498867200000
+    const oneMonth = 2592000000
+    const threeMonths = 7889400000
+    const oneYear = 31556952000
+    const currentTime = Date.now()
+
+    // set timespan beginning
+    switch (timespan) {
+        case "1":
+            timespan = oneMonth
+            break
+        case "3":
+            timespan = threeMonths
+            break
+        case "12":
+            timespan = oneYear
+            break
+        case "all":
+            timespan = currentTime - foundingTime
+            break
+        default:
+            timespan = currentTime - foundingTime
+            break
+    }
+    beginTime = currentTime - timespan
+
+    // FIAT buy history
+    while (beginTime < currentTime) {
+        // set timespan end
+        if (beginTime + threeMonths <= currentTime) {
+            endTime = beginTime + threeMonths
+        } else {
+            endTime = currentTime
+        }
+
+        // signed request for FIAT Payment History
+        timestamp = Date.now()
+        params = `transactionType=0&beginTime=${beginTime}&endTime=${endTime}&timestamp=${timestamp}`
+        signature = crypto
+            .createHmac("sha256", secret)
+            .update(params)
+            .digest("hex")
+        url = `${burl}/sapi/v1/fiat/payments?${params}&signature=${signature}`
+
+        fiatResponse = await fetch(url, {
+            headers: {
+                "Content-Type": "application/json",
+                "X-MBX-APIKEY": key,
+            },
+        }).then((res) => res.json())
+
+        // push completed FIAT payment
+        if (fiatResponse.data && fiatResponse.total > 0) {
+            for (entry of fiatResponse.data) {
+                if ((entry.status = "Completed")) fiatHistory.push(entry)
+            }
+        }
+
+        // increment
+        beginTime += threeMonths
+    }
+
+    // calculate FIAT invested and associated fees
+    let fiatInvested = {}
+    let purchaseFees = {}
+    for (entry of fiatHistory) {
+        fiatInvested[`${entry.fiatCurrency}`]
+            ? (fiatInvested[`${entry.fiatCurrency}`] += parseFloat(
+                  entry.sourceAmount
+              ))
+            : (fiatInvested[`${entry.fiatCurrency}`] = parseFloat(
+                  entry.sourceAmount
+              ))
+        purchaseFees[`${entry.fiatCurrency}`]
+            ? (purchaseFees[`${entry.fiatCurrency}`] += parseFloat(
+                  entry.totalFee
+              ))
+            : (purchaseFees[`${entry.fiatCurrency}`] = parseFloat(
+                  entry.totalFee
+              ))
+    }
+
+    fiatInvested = Object.entries(fiatInvested)
+    purchaseFees = Object.entries(purchaseFees)
+
+    console.log(fiatInvested)
+    console.log(purchaseFees)
+    response = fiatHistory
+    res.json(response)
 })
 
 app.listen(port, () => console.log("Server started on port " + port))
