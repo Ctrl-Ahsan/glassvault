@@ -180,7 +180,7 @@ app.post("/vault", async (req, res) => {
                 if (coinTrades.length > 0 && coinTrades2.length > 0) {
                     coinTrades = coinTrades.concat(coinTrades2)
                     coinTrades.sort((a, b) => {
-                        return a[time] - b[time]
+                        return a.time - b.time
                     })
                 }
                 // check if coin has been traded
@@ -333,6 +333,7 @@ app.post("/summary", async (req, res) => {
     beginTime = currentTime - timespan
 
     // FIAT buy history
+    let fiatHistory = []
     while (beginTime < currentTime) {
         // set timespan end
         if (beginTime + threeMonths <= currentTime) {
@@ -368,7 +369,7 @@ app.post("/summary", async (req, res) => {
         beginTime += threeMonths
     }
 
-    // calculate FIAT invested and associated fees
+    // calculate FIAT invested and purchase fees
     let fiatInvested = {}
     let purchaseFees = {}
     for (entry of fiatHistory) {
@@ -387,13 +388,194 @@ app.post("/summary", async (req, res) => {
                   entry.totalFee
               ))
     }
-
     fiatInvested = Object.entries(fiatInvested)
     purchaseFees = Object.entries(purchaseFees)
 
-    console.log(fiatInvested)
-    console.log(purchaseFees)
-    response = fiatHistory
+    // All trade history
+    let trades = []
+
+    // signed request for Account Snapshot
+    timestamp = Date.now()
+    params = `type=SPOT&timestamp=${timestamp}`
+    signature = crypto.createHmac("sha256", secret).update(params).digest("hex")
+    url = `${burl}/sapi/v1/accountSnapshot?${params}&signature=${signature}`
+
+    const accountSnapshot = await fetch(url, {
+        headers: {
+            "Content-Type": "application/json",
+            "X-MBX-APIKEY": key,
+        },
+    }).then((res) => res.json())
+
+    const allCoins =
+        accountSnapshot.snapshotVos[accountSnapshot.snapshotVos.length - 2].data
+            .balances
+
+    const fiatCurrencies = [
+        "USDT",
+        "BUSD",
+        "UST",
+        "USDC",
+        "DAI",
+        "FRAX",
+        "TUSD",
+        "USDD",
+        "GUSD",
+        "USDN",
+        "USTC",
+        "MXN",
+        "UGX",
+        "SDG",
+        "XOF",
+        "SEK",
+        "QAR",
+        "LYD",
+        "KWD",
+        "CHF",
+        "HRK",
+        "VND",
+        "TJS",
+        "AED",
+        "DKK",
+        "BGN",
+        "BHD",
+        "KZT",
+        "AFN",
+        "HUF",
+        "PEN",
+        "TMT",
+        "CLP",
+        "TND",
+        "DOP",
+        "PHP",
+        "COP",
+        "USD",
+        "ETB",
+        "LAK",
+        "BND",
+        "AMD",
+        "TRY",
+        "EUR",
+        "RON",
+        "NGN",
+        "PKR",
+        "PLN",
+        "BRL",
+        "ZAR",
+        "TWD",
+        "UYU",
+        "OMR",
+        "KES",
+        "ARS",
+        "UZS",
+        "RUB",
+        "DZD",
+        "KGS",
+        "XAF",
+        "TZS",
+        "AUD",
+        "KHR",
+        "IDR",
+        "MMK",
+        "NOK",
+        "CZK",
+        "MNT",
+        "GBP",
+        "BYN",
+        "GEL",
+        "UAH",
+        "GHS",
+        "JOD",
+        "HKD",
+        "CAD",
+        "SAR",
+        "INR",
+        "JPY",
+        "EGP",
+        "NZD",
+    ]
+
+    let purchased = 0
+    let sold = 0
+    let fees = 0
+
+    for (entry of allCoins) {
+        // filters out fiat currencies
+        if (!fiatCurrencies.includes(entry.asset)) {
+            // signed request for Accout Trade List (USDT pairs)
+            timestamp = Date.now()
+            params = `symbol=${entry.asset}USDT&limit=1000&timestamp=${timestamp}`
+            signature = crypto
+                .createHmac("sha256", secret)
+                .update(params)
+                .digest("hex")
+            url = `${burl}/api/v3/myTrades?${params}&signature=${signature}`
+
+            let coinTrades = await fetch(url, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-MBX-APIKEY": key,
+                },
+            }).then((res) => res.json())
+
+            // signed request for Accout Trade List (BUSD pairs)
+            timestamp = Date.now()
+            params = `symbol=${entry.asset}BUSD&limit=1000&timestamp=${timestamp}`
+            signature = crypto
+                .createHmac("sha256", secret)
+                .update(params)
+                .digest("hex")
+            url = `${burl}/api/v3/myTrades?${params}&signature=${signature}`
+
+            let coinTrades2 = await fetch(url, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-MBX-APIKEY": key,
+                },
+            }).then((res) => res.json())
+
+            // merge trades if coin has been traded in both USDT and BUSD
+            if (coinTrades.length > 0 && coinTrades2.length > 0) {
+                coinTrades = coinTrades.concat(coinTrades2)
+                coinTrades.sort((a, b) => {
+                    return a.time - b.time
+                })
+            }
+
+            // check if coin has been traded
+            if (coinTrades.length > 0) trades.push(coinTrades)
+            else if (coinTrades2.length > 0) trades.push(coinTrades2)
+        }
+    }
+
+    // calculate trading volume and fees
+    for (coin of trades) {
+        for (trade of coin) {
+            if (trade.isBuyer) {
+                purchased += parseFloat(trade.quoteQty)
+                if (trade.commissionAsset === "BNB") {
+                    fees += parseFloat(trade.quoteQty) * 0.00075
+                } else {
+                    fees += parseFloat(trade.quoteQty) * 0.001
+                }
+            } else {
+                sold += parseFloat(trade.quoteQty)
+                if (trade.commissionAsset === "BNB") {
+                    fees += parseFloat(trade.quoteQty) * 0.00075
+                } else {
+                    fees += parseFloat(trade.quoteQty) * 0.001
+                }
+            }
+        }
+    }
+
+    response = {
+        fiatInvested: fiatInvested,
+        purchaseFees: purchaseFees,
+        purchased: purchased,
+        sold: sold,
+        fees: fees,
+    }
     res.json(response)
 })
 
