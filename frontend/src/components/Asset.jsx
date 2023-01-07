@@ -3,7 +3,7 @@ import styled from "styled-components"
 import { AppContext } from "../context/AppContext"
 
 const Asset = (props) => {
-    const { setPage, setCoin } = useContext(AppContext)
+    const { setPage, setCoin, menuOpened, menuClosed } = useContext(AppContext)
 
     const handleClick = () => {
         setCoin(props)
@@ -54,6 +54,7 @@ const Asset = (props) => {
             display: grid;
             grid-template-columns: 1fr 1fr;
             margin: 10px;
+            font-size: 0.8em;
         }
 
         & .row-heading {
@@ -70,7 +71,10 @@ const Asset = (props) => {
         }
     `
     return (
-        <AssetContainer onClick={handleClick} className="puff-in-center">
+        <AssetContainer
+            onClick={handleClick}
+            className={!menuOpened && !menuClosed ? "puff-in-center" : ""}
+        >
             <div className="logo">
                 <img src={props.imgURL} alt="logo" />
             </div>
@@ -97,6 +101,10 @@ const Asset = (props) => {
                         )}
                         %
                     </div>
+                </div>
+                <div className="row">
+                    <div className="row-heading">Value</div>
+                    <div>${(props.price * props.amount).toFixed(2)}</div>
                 </div>
                 <div className="row">
                     <div className="row-heading">Amount</div>

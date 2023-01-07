@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import styled from "styled-components"
 import Asset from "./Asset"
 import { BiUserCircle } from "react-icons/bi"
@@ -6,10 +6,17 @@ import axios from "axios"
 import { useContext } from "react"
 import { AppContext } from "../context/AppContext"
 import Coin from "./Coin"
+import Summary from "./Summary"
 
 const Vault = () => {
-    const { page, setPage } = useContext(AppContext)
-    const [assets, setAssets] = useState([])
+    const {
+        page,
+        setPage,
+        assets,
+        setAssets,
+        setMenuOpened,
+        setSummaryOpened,
+    } = useContext(AppContext)
 
     useEffect(() => {
         const setVault = async () => {
@@ -70,6 +77,7 @@ const Vault = () => {
 
     const VaultContainer = styled.section`
         min-height: 100vh;
+        position: relative;
 
         & .top {
             display: flex;
@@ -94,8 +102,8 @@ const Vault = () => {
         & .list {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            column-gap: 4vw;
-            row-gap: 30px;
+            column-gap: 1.3em;
+            row-gap: 1.3em;
 
             margin: 2em;
 
@@ -112,10 +120,27 @@ const Vault = () => {
         <VaultContainer>
             <div className="top">
                 <div className="heading">Vault</div>
-                <div className="user" onClick={() => setPage("STATS")}>
-                    <BiUserCircle />
-                </div>
+                {page !== "COIN" ? (
+                    <div
+                        className="user"
+                        onClick={async () => {
+                            if (page !== "SUMMARY") {
+                                setMenuOpened(true)
+                                setSummaryOpened(true)
+                                setPage("SUMMARY")
+                                setTimeout(() => {
+                                    setSummaryOpened(false)
+                                }, 1000)
+                            }
+                        }}
+                    >
+                        <BiUserCircle />
+                    </div>
+                ) : (
+                    ""
+                )}
             </div>
+            {page === "SUMMARY" ? <Summary /> : ""}
             {page === "COIN" ? (
                 <Coin />
             ) : (

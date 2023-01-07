@@ -13,7 +13,7 @@ import {
 } from "recharts"
 
 const Coin = () => {
-    const { coin, setPage } = useContext(AppContext)
+    const { coin, setPage, setMenuClosed } = useContext(AppContext)
     const data = coin.trades
 
     const formatNumber = (num) => {
@@ -174,7 +174,13 @@ const Coin = () => {
 
     return (
         <CoinContainer className="swing-in-top-fwd">
-            <div className="close" onClick={() => setPage("VAULT")}>
+            <div
+                className="close"
+                onClick={() => {
+                    setMenuClosed(false)
+                    setPage("VAULT")
+                }}
+            >
                 <IoIosArrowBack />
             </div>
             <div className="heading">

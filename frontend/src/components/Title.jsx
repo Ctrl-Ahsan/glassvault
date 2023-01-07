@@ -35,7 +35,6 @@ const Title = () => {
             if (response.status !== 200) {
                 toast.error(response.data)
             } else {
-                console.log(response)
                 localStorage.setItem(
                     "auth",
                     JSON.stringify({
